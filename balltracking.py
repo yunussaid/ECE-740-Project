@@ -137,27 +137,27 @@ def main():
             # Calculate the ball's 3D position
             pos_3d = calculate_3d_position(ball_left, ball_right, stereo_params,width, height)
             print(pos_3d)
-            # if pos_3d is not None:
-            #     timestamps.append(time.time())
-            #     positions.append(pos_3d)
+            if pos_3d is not None:
+                timestamps.append(time.time())
+                positions.append(pos_3d)
 
-            #     # Fit trajectory after collecting enough data points
-            #     if len(positions) > 5:
-            #         positions_np = np.array(positions)
-            #         timestamps_np = np.array(timestamps) - timestamps[0]
-            #         trajectory_params = fit_trajectory(timestamps_np, positions_np)
+                # Fit trajectory after collecting enough data points
+                if len(positions) > 6:
+                    positions_np = np.array(positions)
+                    timestamps_np = np.array(timestamps) - timestamps[0]
+                    trajectory_params = fit_trajectory(timestamps_np, positions_np)
 
-            #         # Predict future position
-            #         t_future = 1.5  # Predict 1.5 seconds ahead
-            #         future_position = trajectory_model(
-            #             np.array([t_future]), *trajectory_params
-            #         )
-            #         print("Predicted Future Position:", future_position)
+                    # Predict future position
+                    t_future = 1.5  # Predict 1.5 seconds ahead
+                    future_position = trajectory_model(
+                        np.array([t_future]), *trajectory_params
+                    )
+                    print("Predicted Future Position:", future_position)
 
-            #     # Manage buffer size
-            #     if len(positions) > 20:
-            #         positions.pop(0)
-            #         timestamps.pop(0)
+                # Manage buffer size
+                if len(positions) > 20:
+                    positions.pop(0)
+                    timestamps.pop(0)
 
         # Show frames and masks for debugging
         cv2.imshow("Left Camera", left_frame)
