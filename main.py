@@ -4,7 +4,7 @@ import numpy as np
 
 def filterOrange():
     # Open the camera
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     
     # Define the color range for the orange Ping-Pong ball in HSV
     # These values may need slight tweaking depending on your lighting conditions
@@ -37,7 +37,7 @@ def filterOrange():
 
 def orangeContour():
     # Open the camera
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
 
     # Define the color range for the orange Ping-Pong ball in HSV
     # These values may need slight tweaking depending on your lighting conditions
@@ -60,14 +60,14 @@ def orangeContour():
         
         for contour in contours:
             # Filter out small contours by area
-            if cv2.contourArea(contour) > 100:  # Adjust threshold based on the size of the ball
+            if cv2.contourArea(contour) > 30:  # Adjust threshold based on the size of the ball
                 # Draw a bounding circle around the detected ball
                 (x, y), radius = cv2.minEnclosingCircle(contour)
                 center = (int(x), int(y))
                 radius = int(radius)
-                
+                print(radius)
                 # Only proceed if the radius meets a minimum size
-                if radius > 10:
+                if radius > 3:
                     cv2.circle(frame, center, radius, (0, 255, 0), 2)  # Draw green circle around the ball
                     cv2.putText(frame, "Ping-Pong Ball", (center[0] - 10, center[1] - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
@@ -89,6 +89,7 @@ def orangeContour():
 
 def main():
     # filterOrange()
+    print("sfhfkasdgfjkas")
     orangeContour()
 
 if __name__ == "__main__":
