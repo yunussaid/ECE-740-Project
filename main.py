@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
 
-
 def filterOrange():
     # Open the camera
     cap = cv2.VideoCapture(1)
@@ -69,7 +68,7 @@ def orangeContour():
                 # Only proceed if the radius meets a minimum size
                 if radius > 10:
                     cv2.circle(frame, center, radius, (0, 255, 0), 2)  # Draw green circle around the ball
-                    cv2.putText(frame, "Ping-Pong Ball", (center[0] - 10, center[1] - 10),
+                    cv2.putText(frame, "Ball", (center[0] - 10, center[1] - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         # Display the original frame with contours drawn on it
@@ -88,6 +87,10 @@ def orangeContour():
 
 
 def main():
+    print("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print("    Running ECE-740-Project ...      ")
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n")
+
     # filterOrange()
     orangeContour()
 
