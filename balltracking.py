@@ -5,8 +5,8 @@ import time
 
 # Stereo camera parameters (replace with your calibration values)
 stereo_params = {
-    'focal_length': 700,  # Example value
-    'baseline': 0.2       # Distance between the cameras in meters
+    'focal_length': 1000,
+    'baseline': 0.06       # Distance between the cameras in centimeters
 }
 
 # Global variables for tracking
@@ -40,9 +40,12 @@ def calculate_3d_position(point_left, point_right, stereo_params, image_width, i
     center_y = image_height / 2
 
     # Calculate 3D coordinates with the center of the image as the origin
-    X = ((point_left[0] - center_x) * depth) / focal_length
+    X = ((point_left[0] - center_x) * depth) / focal_length 
     Y = ((point_left[1] - center_y) * depth) / focal_length
     Z = depth
+    X = X
+    Y = -Y*100
+    Z = Z*20
 
     return X, Y, Z
 
@@ -93,14 +96,14 @@ def orangeContour(frame):
 
     for contour in contours:
         # Filter out small contours by area
-        if cv2.contourArea(contour) > 30:  # Adjust threshold based on the size of the ball
+        if cv2.contourArea(contour) > 3:  # Adjust threshold based on the size of the ball
             # Draw a bounding circle around the detected ball
             (x, y), radius = cv2.minEnclosingCircle(contour)
             center = (int(x), int(y))
             radius = int(radius)
 
             # Only proceed if the radius meets a minimum size
-            if radius > 3:
+            if radius > 0.5:
                 return center, radius, mask
 
     # Return None if no ball is detected
@@ -135,29 +138,29 @@ def main():
 
         if ball_left and ball_right:
             # Calculate the ball's 3D position
-            pos_3d = calculate_3d_position(ball_left, ball_right, stereo_params,width, height)
+            pos_3d = calculate_3d_position(ball_left, ball_right, stereo_params, width, height)
             print(pos_3d)
-            if pos_3d is not None:
-                timestamps.append(time.time())
-                positions.append(pos_3d)
+            # if pos_3d is not None:
+            #     timestamps.append(time.time())
+            #     positions.append(pos_3d)
 
-                # Fit trajectory after collecting enough data points
-                if len(positions) > 6:
-                    positions_np = np.array(positions)
-                    timestamps_np = np.array(timestamps) - timestamps[0]
-                    trajectory_params = fit_trajectory(timestamps_np, positions_np)
+            #     # Fit trajectory after collecting enough data points
+            #     if len(positions) > 6:
+            #         positions_np = np.array(positions)
+            #         timestamps_np = np.array(timestamps) - timestamps[0]
+            #         trajectory_params = fit_trajectory(timestamps_np, positions_np)
 
-                    # Predict future position
-                    t_future = 1.5  # Predict 1.5 seconds ahead
-                    future_position = trajectory_model(
-                        np.array([t_future]), *trajectory_params
-                    )
-                    print("Predicted Future Position:", future_position)
+            #         # Predict future position
+            #         t_future = 1.5  # Predict 1.5 seconds ahead
+            #         future_position = trajectory_model(
+            #             np.array([t_future]), *trajectory_params
+            #         )
+            #         print("Predicted Future Position:", future_position)
 
-                # Manage buffer size
-                if len(positions) > 20:
-                    positions.pop(0)
-                    timestamps.pop(0)
+            #     # Manage buffer size
+            #     if len(positions) > 20:
+            #         positions.pop(0)
+            #         timestamps.pop(0)
 
         # Show frames and masks for debugging
         cv2.imshow("Left Camera", left_frame)
