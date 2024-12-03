@@ -3,8 +3,8 @@ import numpy as np
 import glob
 
 # Checkerboard dimensions (inner corners)
-checkerboard_rows = 6  # Adjust based on your pattern
-checkerboard_cols = 9  # Adjust based on your pattern
+checkerboard_rows = 5  # Adjust based on your pattern
+checkerboard_cols = 8  # Adjust based on your pattern
 square_size = 30  # Size of one square in millimeters (or other consistent unit)
 
 # Termination criteria
@@ -43,25 +43,23 @@ for left_img_path, right_img_path in zip(left_images, right_images):
     ret_left, corners_left = cv2.findChessboardCorners(gray_left, (checkerboard_cols, checkerboard_rows), None)
     ret_right, corners_right = cv2.findChessboardCorners(gray_right, (checkerboard_cols, checkerboard_rows), None)
 
-    if ret_left and ret_right:
-        obj_points.append(object_points)
-
-        # Refine corner locations
-        corners_left = cv2.cornerSubPix(gray_left, corners_left, (11, 11), (-1, -1), criteria)
-        corners_right = cv2.cornerSubPix(gray_right, corners_right, (11, 11), (-1, -1), criteria)
-
-        img_points_left.append(corners_left)
-        img_points_right.append(corners_right)
-
-        # Debugging: Display chessboard detection
+    # Debug: Visualize the detection
+    if ret_left:
         cv2.drawChessboardCorners(img_left, (checkerboard_cols, checkerboard_rows), corners_left, ret_left)
-        cv2.drawChessboardCorners(img_right, (checkerboard_cols, checkerboard_rows), corners_right, ret_right)
-
-        cv2.imshow('Left Camera', img_left)
-        cv2.imshow('Right Camera', img_right)
-        cv2.waitKey(500)  # Pause for display
+        cv2.imshow('Left Camera - Chessboard', img_left)
+        cv2.imwrite(left_img_path[:-4] + '_corners.jpg', img_left)
     else:
-        print(f"Chessboard not detected in pair: {left_img_path}, {right_img_path}")
+        print(f"Chessboard not detected in LEFT image: {left_img_path}")
+
+    if ret_right:
+        cv2.drawChessboardCorners(img_right, (checkerboard_cols, checkerboard_rows), corners_right, ret_right)
+        cv2.imshow('Right Camera - Chessboard', img_right)
+        cv2.imwrite(right_img_path[:-4] + '_corners.jpg', img_right)
+    else:
+        print(f"Chessboard not detected in RIGHT image: {right_img_path}")
+
+    cv2.waitKey(100)  # Pause to display the results
+
 
 cv2.destroyAllWindows()
 

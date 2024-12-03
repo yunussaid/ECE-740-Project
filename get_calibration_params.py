@@ -20,8 +20,8 @@ img_points_left = []  # 2D points in left image plane
 img_points_right = []  # 2D points in right image plane
 
 # Load and sort stereo images
-left_images = sorted(glob.glob('left_*.jpg'))  # Match all left images
-right_images = sorted(glob.glob('right_*.jpg'))  # Match all right images
+left_images = sorted(glob.glob('Final image group/left_*.jpg'))  # Match all left images
+right_images = sorted(glob.glob('Final image group/right_*.jpg'))  # Match all right images
 
 # Debugging: Print file lists
 print("Left images:", left_images)
@@ -43,21 +43,27 @@ for left_img_path, right_img_path in zip(left_images, right_images):
     ret_left, corners_left = cv2.findChessboardCorners(gray_left, (checkerboard_cols, checkerboard_rows), None)
     ret_right, corners_right = cv2.findChessboardCorners(gray_right, (checkerboard_cols, checkerboard_rows), None)
 
-    # Debug: Visualize the detection
-    if ret_left:
+    if ret_left and ret_right:
+        obj_points.append(object_points)
+
+        # Refine corner locations
+        # corners_left = cv2.cornerSubPix(gray_left, corners_left, (11, 11), (-1, -1), criteria)
+        # corners_right = cv2.cornerSubPix(gray_right, corners_right, (11, 11), (-1, -1), criteria)
+
+        img_points_left.append(corners_left)
+        img_points_right.append(corners_right)
+
+        # Debugging: Display chessboard detection
         cv2.drawChessboardCorners(img_left, (checkerboard_cols, checkerboard_rows), corners_left, ret_left)
-        cv2.imshow('Left Camera - Chessboard', img_left)
-    else:
-        print(f"Chessboard not detected in LEFT image: {left_img_path}")
-
-    if ret_right:
         cv2.drawChessboardCorners(img_right, (checkerboard_cols, checkerboard_rows), corners_right, ret_right)
-        cv2.imshow('Right Camera - Chessboard', img_right)
+
+        cv2.imshow('Left Camera', img_left)
+        cv2.imwrite(left_img_path[:-4] + '_gcp.jpg', img_left)
+        cv2.imshow('Right Camera', img_right)
+        cv2.imwrite(right_img_path[:-4] + '_gcp.jpg', img_right)
+        cv2.waitKey(500)  # Pause for display
     else:
-        print(f"Chessboard not detected in RIGHT image: {right_img_path}")
-
-    cv2.waitKey(500)  # Pause to display the results
-
+        print(f"Chessboard not detected in pair: {left_img_path}, {right_img_path}")
 
 cv2.destroyAllWindows()
 
@@ -72,10 +78,10 @@ ret, K1, D1, K2, D2, R, T, E, F = cv2.stereoCalibrate(
 )
 
 # Output calibration results
-print("Camera 1 Matrix (K1):", K1)
-print("Camera 2 Matrix (K2):", K2)
-print("Rotation Matrix (R):", R)
-print("Translation Vector (T):", T)
+print("Camera 1 Matrix (K1):\n", K1, "\n")
+print("Camera 2 Matrix (K2):\n", K2, "\n")
+print("Rotation Matrix (R):\n", R, "\n")
+print("Translation Vector (T):\n", T, "\n")
 
 # Save calibration parameters
-np.savez('stereo_params.npz', K1=K1, D1=D1, K2=K2, D2=D2, R=R, T=T)
+# np.savez('stereo_params.npz', K1=K1, D1=D1, K2=K2, D2=D2, R=R, T=T)
