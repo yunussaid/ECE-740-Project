@@ -1,5 +1,6 @@
 import time
 import hid
+import math
 
 class Arm:
     def __init__(self):
@@ -10,14 +11,18 @@ class Arm:
         self.SERVO_PWM_MAX = 2500
         self.ANGLE_MIN = -90
         self.ANGLE_MAX = 90
-        self.DEFAULT_DURATION = 1500  # Default duration for servo movements (ms)
+        self.DEFAULT_DURATION = 1000  # Default duration for servo movements (ms)
 
         # Individual angle limits for each servo
+        # Servo 6 (Base rotation): range is -90° (max left rotation) to 90° (max right rotation)
+        # Servo 5 (Shoulder tilt): range is -90° (max back rotation) to 90° (max front rotation)
+        # Servo 4 (Elbow tilt): range is -90° (max back rotation) to 90° (max front rotation)
+        # Servo 3 (Net up/down tilt): range is -90° (max down rotation) to 90° (max up rotation)
         self.servo_angle_limits = {
-            3: (-90, 90),   # Servo 3 (Net up/down)
-            4: (-90, 90),   # Servo 4 (Elbow tilt)
-            5: (-90, 90),   # Servo 5 (Shoulder tilt)
-            6: (-90, 90)    # Servo 6 (Base rotation)
+            3: (-90, 90, 1),    # Servo 3 (Net up/down tilt)
+            4: (-90, 90, -1),   # Servo 4 (Elbow tilt)
+            5: (-90, 90, 1),    # Servo 5 (Shoulder tilt)
+            6: (-90, 90, -1)    # Servo 6 (Base rotation)
         }
 
     def connect(self):
@@ -33,7 +38,7 @@ class Arm:
             self.device.close()
             print("Disconnected from arm.")
 
-    def send(self, cmd, data=[]):
+    def send(self, cmd, data=[], debug=False):
         """Send a command to the robotic arm."""
         HEADER = 0x55
         report_data = [
@@ -41,7 +46,8 @@ class Arm:
         ]
         if len(data):
             report_data.extend(data)
-        print('Sending:', report_data)
+        if debug:
+            print('Sending:', report_data)
         self.device.write(report_data)
 
     def angle_to_pwm(self, angle):
@@ -59,12 +65,12 @@ class Arm:
             raise ValueError(f"Servo {servo} cannot be identified.")
 
         # Enforce individual angle limits for the servo
-        min_angle, max_angle = self.servo_angle_limits[servo]
+        min_angle, max_angle, orientatioin = self.servo_angle_limits[servo]
         if angle < min_angle or angle > max_angle:
             raise ValueError(f"Servo {servo} angle must be between {min_angle} and {max_angle} degrees.")
 
         # Convert the angle to PWM and send the command
-        pwm_position = self.angle_to_pwm(angle)
+        pwm_position = self.angle_to_pwm(angle*orientatioin)
         data = bytearray([1, duration & 0xFF, (duration & 0xFF00) >> 8, servo, pwm_position & 0xFF, (pwm_position & 0xFF00) >> 8])
         CMD_SERVO_MOVE = 0x03
         self.send(CMD_SERVO_MOVE, data)
@@ -88,6 +94,55 @@ class Arm:
         """Reset angle to 0 for all servos."""
         self.set_all_angles([0, 0, 0, 0], duration)
 
+    def move_to_3D_coordinate(self, x, y, z=0):
+        """Move the arm to a specified 3D coordinate."""
+        
+        print(f"3D destination = (x:{x}, y:{y}, z:{z})")
+
+        """X-Y Plane Calculations"""
+        
+        if y < 0:
+            raise ValueError("Destiation is out of reach.")
+        theta_base = math.degrees( math.atan2(x, y) )
+        
+        L = math.sqrt(x**2 + y**2)  # X-Y plane distance to dest
+        print(f"L = {L:.2f}")
+
+        """L-Z Plane Calculations"""
+
+        if z < 0:
+            raise ValueError("Destiation is out of reach.")
+        h = math.sqrt(L**2 + z**2)
+        print(f"h = {h:.2f}")
+        
+        L1 = 104    # Shoulder to elbow (in mm)
+        L2 = 88.5   # Elbow to net servo (in mm)
+
+        phi = math.degrees( math.atan2(z, L) )
+        cos_theta = (h**2 + L1**2 - L2**2) / (2*h*L1)
+        cos_alpha = (h**2 + L2**2 - L1**2) / (2*h*L2)
+        theta = math.degrees( math.acos(cos_theta) )
+        alpha = math.degrees( math.acos(cos_alpha) )
+        print(f"phi = {phi:.2f}")
+        print(f"theta = {theta:.2f}")
+        print(f"alpha = {alpha:.2f}")
+
+        theta_shoulder = 90 - phi - theta
+        theta_elbow = theta + alpha
+
+        """Final Angles"""
+
+        theta_net = 0
+        theta_net = (theta_shoulder + theta_elbow)
+        if theta_net > 90: theta_net = 90
+        print(f"Base:{theta_base:.2f}°, Shoulder:{theta_shoulder:.2f}°, Elbow:{theta_elbow:.2f}°, Net:{theta_net:.2f}°")
+        
+        set_servo_angles = True
+        if set_servo_angles:
+            self.set_angle(6, theta_base)  # Base
+            self.set_angle(5, theta_shoulder)  # Shoulder
+            self.set_angle(4, theta_elbow)  # Elbow
+            self.set_angle(3, theta_net)  # Net parallelity
 
 def main():
     arm = Arm()
@@ -95,25 +150,24 @@ def main():
     try:
         arm.connect()
 
-        # Set servos 3-6 to 0 degrees
-        print("\nSetting servos to custom angles...")
-        arm.set_all_angles([45, 45, 45, 45])
+        # Move to a specific 3D coordinate
+        arm.move_to_3D_coordinate(100, 100, 100)
 
         # Sleep for 5 seconds
         print("\nSleeping for 5 seconds...")
         time.sleep(5)
 
-        # Set servos 3-6 to custom angles within limits
-        print("\nResetting all servos...")
+        arm.move_to_3D_coordinate(-100, 100, 100)
+        print("\nSleeping for 5 seconds...")
+        time.sleep(5)
+
+        arm.move_to_3D_coordinate(0, 192, 2)
+        print("\nSleeping for 5 seconds...")
+        time.sleep(5)
+
+        # Reset servos 3-6 to 0 degrees
+        print("\nResetting servos to defualt angles...")
         arm.reset_all_angles()
-
-        # Sleep for 5 seconds
-        print("\nSleeping for 5 seconds...")
-        time.sleep(5)
-
-        # Attempt to exceed limits (should raise an error)
-        print("\nTrying to exceed limits...")
-        arm.set_angle(5, 100)  # This will raise a ValueError
 
     finally:
         arm.disconnect()
