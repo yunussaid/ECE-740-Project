@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
-from arm import Arm  # Assuming your Arm class is in arm.py
-import threading
+from arm import Arm
+
 
 class ArmControlApp:
     def __init__(self, root, arm):
@@ -9,30 +9,26 @@ class ArmControlApp:
         self.arm = arm
 
         # Set up GUI
-        self.root.title("3D Arm Control")
-        self.root.geometry("400x400")
+        self.root.title("3D Arm Control - Circular Bounds with Auto-Z")
+        self.root.geometry("400x300")
 
-        # StringVars to hold current value displays
+        # StringVars to display current slider values
         self.x_value = tk.StringVar()
         self.y_value = tk.StringVar()
-        self.z_value = tk.StringVar()
 
-        # Sliders for X, Y, and Z
-        self.x_slider = self.create_slider("X Axis", -200, 200, 100, 0, self.x_value)
-        self.y_slider = self.create_slider("Y Axis", -200, 200, 100, 1, self.y_value)
-        self.z_slider = self.create_slider("Z Axis", -200, 200, 100, 2, self.z_value)
+        # Sliders for X and Y
+        self.x_slider = self.create_slider("X Axis", -193, 193, 0, 0, self.x_value)
+        self.y_slider = self.create_slider("Y Axis", -193, 193, 193, 1, self.y_value)
 
         # Button to reset arm
         reset_button = ttk.Button(self.root, text="Reset", command=self.reset_position)
-        reset_button.grid(row=4, column=1, pady=10)
+        reset_button.grid(row=2, column=1, pady=10)
 
-        # Start a separate thread for continuous arm updates
-        self.running = True
-        self.update_thread = threading.Thread(target=self.update_arm_position, daemon=True)
-        self.update_thread.start()
+        # Start a callback for live updates
+        self.update_arm_position()
 
     def create_slider(self, label, min_val, max_val, default, row, value_var):
-        """Helper to create a slider with current value and bounds display."""
+        """Helper to create a slider with a value display."""
         # Axis Label
         ttk.Label(self.root, text=label).grid(row=row, column=0, padx=10, pady=10)
 
@@ -46,41 +42,35 @@ class ArmControlApp:
 
         # Current Value Label
         ttk.Label(self.root, textvariable=value_var).grid(row=row, column=2, padx=10, pady=10)
-        value_var.set(f"{default} mm")  # Set initial value
-
-        # Bounds Label
-        ttk.Label(self.root, text=f"[{min_val}, {max_val}]").grid(row=row + 1, column=1, padx=10, pady=5)
+        value_var.set(f"{default:.1f} mm")  # Set initial value
 
         return slider
 
     def update_current_value(self, value_var, slider):
         """Update the current value display for a slider."""
-        value_var.set(f"{int(slider.get())} mm")
+        value_var.set(f"{slider.get():.1f} mm")
 
     def reset_position(self):
-        """Reset the arm to the default position."""
-        self.x_slider.set(100)
-        self.y_slider.set(100)
-        self.z_slider.set(100)
+        """Reset the sliders to default values."""
+        self.x_slider.set(0)
+        self.y_slider.set(0)
 
     def update_arm_position(self):
-        """Continuously update the arm position based on slider values."""
-        while self.running:
-            x = int(self.x_slider.get())
-            y = int(self.y_slider.get())
-            z = int(self.z_slider.get())
+        """Continuously update the arm's position based on sliders."""
+        x = self.x_slider.get()
+        y = self.y_slider.get()
 
-            try:
-                self.arm.move_to_3D_coordinate(x, y, z)
-            except ValueError as e:
-                print(f"Out of range: {e}")
+        # Move the arm to the specified (x, y) position
+        try:
+            self.arm.move_to_xy(x, y)
+        except ValueError as e:
+            print(f"Out of range: {e}")
 
-            # Update every 100 ms
-            self.root.after(100)
+        # Schedule the next update
+        self.root.after(100, self.update_arm_position)
 
     def on_close(self):
-        """Handle the window closing."""
-        self.running = False
+        """Handle window close event."""
         self.arm.disconnect()
         self.root.destroy()
 

@@ -94,7 +94,7 @@ class Arm:
         """Reset angle to 0 for all servos."""
         self.set_all_angles([0, 0, 0, 0], duration)
 
-    def move_to_3D_coordinate(self, x, y, z=0):
+    def move_to_3D_point_4_dof(self, x, y, z=0):
         """Move the arm to a specified 3D coordinate."""
         
         print(f"3D destination = (x:{x}, y:{y}, z:{z})")
@@ -144,6 +144,46 @@ class Arm:
             self.set_angle(4, theta_elbow)  # Elbow
             self.set_angle(3, theta_net)  # Net parallelity
 
+    def move_to_xy(self, x, y, debug=False):
+        """
+        Move the arm to a specified (x, y) coordinate in the X-Y plane,
+        calculating the corresponding Z value automatically based on the sphere geometry.
+        """
+        # Arm constants
+        radius = 193  # Sphere radius (maximum reach of the arm)
+
+        # Ensure the point lies within the circle of radius 193 mm
+        distance = math.sqrt(x**2 + y**2)
+        if distance > radius:
+            raise ValueError("Destination is out of reach. Ensure x^2 + y^2 <= 193^2.")
+
+        # Calculate Z value using the sphere equation
+        z = math.sqrt(radius**2 - distance**2)
+
+        # Debug information
+        if debug:
+            print(f"Target position: (x: {x:.2f}, y: {y:.2f}, z: {z:.2f})")
+
+        # Calculate servo angles
+        # Base rotation (Servo 6)
+        theta_base = math.degrees(math.atan2(x, y))
+
+        # Shoulder tilt (Servo 5)
+        theta_shoulder = math.degrees(math.asin(z / radius))
+
+        # Net tilt (Servo 3) to maintain parallelity
+        theta_net = theta_shoulder
+
+        # Set the servo angles
+        self.set_angle(6, theta_base)      # Base
+        self.set_angle(5, theta_shoulder)  # Shoulder
+        self.set_angle(4, 0)               # Fix Elbow at 0°
+        self.set_angle(3, theta_net)       # Net tilt
+
+        if debug:
+            print(f"Servo angles: Base: {theta_base:.2f}°, Shoulder: {theta_shoulder:.2f}°, Net: {theta_net:.2f}°")
+
+
 def main():
     arm = Arm()
 
@@ -151,17 +191,9 @@ def main():
         arm.connect()
 
         # Move to a specific 3D coordinate
-        arm.move_to_3D_coordinate(100, 100, 100)
+        arm.move_to_xy(100, 100)
 
         # Sleep for 5 seconds
-        print("\nSleeping for 5 seconds...")
-        time.sleep(5)
-
-        arm.move_to_3D_coordinate(-100, 100, 100)
-        print("\nSleeping for 5 seconds...")
-        time.sleep(5)
-
-        arm.move_to_3D_coordinate(0, 192, 2)
         print("\nSleeping for 5 seconds...")
         time.sleep(5)
 
