@@ -3,11 +3,25 @@ import numpy as np
 from scipy.optimize import curve_fit
 import time
 
-# Stereo camera parameters (replace with your calibration values)
+
+# Load calibration data
+calibration_data = np.load('stereo_params.npz')
+focal_length = calibration_data['focal_length']  # Focal length in pixels
+baseline = calibration_data['baseline']  # Baseline in cm
+principal_point = calibration_data['principal_point']  # (cx, cy)
+
+# Use these parameters in your 3D position calculation
 stereo_params = {
-    'focal_length': 1000,
-    'baseline': 0.06       # Distance between the cameras in centimeters
+    'focal_length': focal_length,
+    'baseline': baseline,
+    'principal_point': principal_point
 }
+
+# # Stereo camera parameters (replace with your calibration values)
+# stereo_params = {
+#     'focal_length': 1280,
+#     'baseline': 0.06       # Distance between the cameras in centimeters
+# }
 
 # Global variables for tracking
 timestamps = []
@@ -15,39 +29,36 @@ positions = []
 
 def calculate_3d_position(point_left, point_right, stereo_params, image_width, image_height):
     """
-    Calculate the 3D position of the ball using stereo vision, with respect to the center of the image.
+    Calculate the 3D position of the ball in centimeters using stereo vision.
 
     Args:
         point_left (tuple): (x, y) coordinates of the ball in the left image.
         point_right (tuple): (x, y) coordinates of the ball in the right image.
-        stereo_params (dict): Contains 'focal_length' and 'baseline'.
+        stereo_params (dict): Contains 'focal_length', 'baseline', and 'principal_point'.
         image_width (int): Width of the image (in pixels).
         image_height (int): Height of the image (in pixels).
 
     Returns:
-        tuple: (X, Y, Z) 3D coordinates of the ball.
+        tuple: (X, Y, Z) 3D coordinates of the ball in centimeters.
     """
     disparity = point_left[0] - point_right[0]
-    if disparity == 0:  # Avoid division by zero
+    if disparity <= 0:  # Avoid division by zero or negative disparity
         return None
 
     focal_length = stereo_params['focal_length']
-    baseline = stereo_params['baseline']
-    depth = (focal_length * baseline) / disparity
+    baseline = stereo_params['baseline']  # Baseline in cm
+    principal_point = stereo_params['principal_point']  # (cx, cy)
 
-    # Adjust the origin to the center of the image
-    center_x = image_width / 2
-    center_y = image_height / 2
+    # Calculate depth (Z) in cm
+    Z = (focal_length * baseline) / disparity
 
-    # Calculate 3D coordinates with the center of the image as the origin
-    X = ((point_left[0] - center_x) * depth) / focal_length 
-    Y = ((point_left[1] - center_y) * depth) / focal_length
-    Z = depth
-    X = X
-    Y = -Y*100
-    Z = Z*20
+    # Adjust the origin to the center of the stereo camera
+    cx, cy = principal_point
+    X = ((point_left[0] - cx) * Z) / focal_length - (baseline / 2)
+    Y = ((point_left[1] - cy) * Z) / focal_length
 
     return X, Y, Z
+
 
 def trajectory_model(t, x0, y0, z0, vx, vy, vz, az):
     """Model the trajectory of the ball."""
