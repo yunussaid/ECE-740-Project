@@ -123,7 +123,7 @@ def orangeContour(frame):
 def main():
     """Main function to integrate ball detection, tracking, and prediction."""
     # Open the stereo camera (single index for the stereo stream)
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
 
     if not cap.isOpened():
         print("Error: Could not open the camera.")
@@ -149,8 +149,12 @@ def main():
 
         if ball_left and ball_right:
             # Calculate the ball's 3D position
-            pos_3d = calculate_3d_position(ball_left, ball_right, stereo_params, width, height)
-            print(pos_3d)
+            # pos_3d = calculate_3d_position(ball_left, ball_right, stereo_params, width, height)
+            # print(pos_3d)
+            x, y, z = calculate_3d_position(ball_left, ball_right, stereo_params, width, height)
+            if x != None and y != None and z != None:
+                print(f"Ball position: (x:\t{x:.2f},\ty: {y:.2f},\tz: {z:.2f})")
+            
             # if pos_3d is not None:
             #     timestamps.append(time.time())
             #     positions.append(pos_3d)
