@@ -134,6 +134,33 @@ class Arm:
             self.set_angle(4, 0)               # Fix Elbow at 0°
             self.set_angle(3, theta_net)       # Net tilt
 
+    def move_net_to_xy(self, x_net, y_net, execute=False, debug=False):
+        """
+        Move the center of the net to the specified (x_net, y_net) coordinate.
+        The method accounts for the net's offset from Servo 3 and translates
+        the target position accordingly before calling `move_to_xy`.
+        """
+        # Length of the net offset
+        net_length = 120  # mm
+
+        # Calculate the corresponding (x_servo3, y_servo3) for Servo 3
+        dist_2d_net = math.sqrt(x_net**2 + y_net**2)
+
+        if dist_2d_net < net_length:
+            raise ValueError("Target (x_net, y_net) is too close to the origin. The net cannot reach this position.")
+
+        # Scale back to the valid position for Servo 3
+        scale = (dist_2d_net - net_length) / dist_2d_net
+        x_servo3 = x_net * scale
+        y_servo3 = y_net * scale
+
+        if debug:
+            print(f"\nNet target position: (x_net: {x_net:.1f}, y_net: {y_net:.1f})")
+            print(f"Translated Servo 3 position: (x_servo3: {x_servo3:.1f}, y_servo3: {y_servo3:.1f})")
+
+        # Call move_to_xy with the translated coordinates
+        self.move_to_xy(x_servo3, y_servo3, execute, debug)
+
 
 def main():
     arm = Arm()
