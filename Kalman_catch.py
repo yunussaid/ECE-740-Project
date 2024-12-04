@@ -2,9 +2,8 @@ from filterpy.kalman import KalmanFilter
 import time
 import numpy as np
 from arm import Arm
-from scipy.optimize import curve_fit
 import cv2
-from balltracking import orangeContour, calculate_3d_position, fit_trajectory, trajectory_model
+from balltracking import orangeContour, calculate_3d_position
 
 # Load calibration data
 calibration_data = np.load('stereo_params.npz')
@@ -12,7 +11,6 @@ focal_length = calibration_data['focal_length']  # Focal length in pixels
 baseline = calibration_data['baseline']  # Baseline in cm
 principal_point = calibration_data['principal_point']  # (cx, cy)
 
-# Use these parameters in your 3D position calculation
 stereo_params = {
     'focal_length': focal_length,
     'baseline': baseline,
@@ -22,16 +20,22 @@ stereo_params = {
 # Translation vector: camera to arm (in cm)
 translation_vector = (0, 455, 395)  # (T_x, T_y, T_z)
 
-# Global variables for tracking
-timestamps = []
-positions = []
-last_position = None  # Track last arm position
 
-# Initialize Kalman Filter
+def transform_to_arm_coordinates(camera_position, translation_vector):
+    """Transform 3D position from camera to arm coordinates."""
+    X_c, Y_c, Z_c = camera_position
+    T_x, T_y, T_z = translation_vector
+    X_a = X_c - T_x
+    Y_a = Y_c + T_y
+    Z_a = Z_c - T_z
+    return X_a, Y_a, Z_a
+
+
 def setup_kalman_filter():
-    dt = 0.033  # Time step (33 ms for ~30 FPS)
+    """Initialize the Kalman Filter."""
+    dt = 0.033  # Time step (~30 FPS)
     kf = KalmanFilter(dim_x=6, dim_z=3)  # State: [X, Y, Z, Vx, Vy, Vz], Measurement: [X, Y, Z]
-    
+
     # State transition matrix (F)
     kf.F = np.array([
         [1, 0, 0, dt, 0,  0],  # X = X + Vx * dt
@@ -41,53 +45,28 @@ def setup_kalman_filter():
         [0, 0, 0, 0,  1,  0],  # Vy = Vy
         [0, 0, 0, 0,  0,  1]   # Vz = Vz
     ])
-    
+
     # Measurement function (H)
     kf.H = np.array([
         [1, 0, 0, 0, 0, 0],  # Measure X
         [0, 1, 0, 0, 0, 0],  # Measure Y
         [0, 0, 1, 0, 0, 0]   # Measure Z
     ])
-    
-    # Measurement noise covariance (R): Adjust based on the camera's accuracy
-    kf.R = np.eye(3) * 5  # Small noise for accurate sensors
-    
+
+    # Measurement noise covariance (R)
+    kf.R = np.eye(3) * 5  # Adjust based on camera accuracy
+
     # Process noise covariance (Q)
     kf.Q = np.eye(6) * 0.1  # Adjust for smoother or more responsive predictions
-    
+
     # Initial state covariance (P)
-    kf.P = np.eye(6) * 500  # Initial uncertainty for position and velocity
-    
+    kf.P = np.eye(6) * 500
+
     # Initial state vector
     kf.x = np.zeros(6)  # [X, Y, Z, Vx, Vy, Vz]
-    
+
     return kf
 
-# Apply translation to arm coordinates
-def transform_to_arm_coordinates(camera_position, translation_vector):
-    X_c, Y_c, Z_c = camera_position
-    T_x, T_y, T_z = translation_vector
-
-    # Apply the translation matrix
-    X_a = X_c - T_x
-    Y_a = Y_c + T_y
-    Z_a = Z_c - T_z
-
-    return X_a, Y_a, Z_a
-
-# Check if the arm needs to move to the new position
-def should_update_position(current_position, new_position, threshold=5.0):
-    if current_position is None:
-        return True  # Always update if no previous position exists
-
-    diff = np.linalg.norm(np.array(current_position) - np.array(new_position))
-    return diff > threshold
-
-# Interpolate between current and target position for smoother motion
-def interpolate_position(current_position, target_position, steps=10):
-    current = np.array(current_position)
-    target = np.array(target_position)
-    return [tuple(current + (target - current) * i / steps) for i in range(1, steps + 1)]
 
 def main():
     # Initialize the robotic arm
@@ -95,14 +74,11 @@ def main():
     kf = setup_kalman_filter()  # Initialize Kalman Filter
 
     try:
-        # Connect to the robotic arm
         arm.connect()
         print("Robotic arm connected.")
 
-        # Open the stereo camera
+        # Open stereo camera
         cap = cv2.VideoCapture(0)
-
-        # Lower the camera resolution to increase the frame rate and reduce processing time.
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
@@ -111,7 +87,7 @@ def main():
             return
 
         while True:
-            # Capture a frame from the stereo camera
+            # Capture frame from stereo camera
             ret, frame = cap.read()
             if not ret:
                 print("Error: Could not read from the camera.")
@@ -123,56 +99,44 @@ def main():
             left_frame = frame[:, :half_width]
             right_frame = frame[:, half_width:]
 
-            # Detect the ball in the left and right frames
+            # Detect ball in left and right frames
             ball_left, _, mask_left = orangeContour(left_frame)
             ball_right, _, mask_right = orangeContour(right_frame)
 
             if ball_left and ball_right:
-                # Calculate the ball's 3D position in camera coordinates
-                pos_3d_camera = calculate_3d_position(
-                    ball_left, ball_right, stereo_params, width, height
-                )
-
+                # Calculate 3D position in camera coordinates
+                pos_3d_camera = calculate_3d_position(ball_left, ball_right, stereo_params, width, height)
                 if pos_3d_camera is not None:
                     # Predict the next state
                     kf.predict()
 
-                    # Update the Kalman filter with the measured position
+                    # Update Kalman Filter with the measured position
                     measured_position = np.array(pos_3d_camera[:3])  # Only (X, Y, Z)
                     kf.update(measured_position)
 
-                    # Get the filtered position
-                    filtered_position_camera = kf.x[:3]  # [X, Y, Z]
+                    # Get filtered position
+                    filtered_position_camera = kf.x[:3]
                     filtered_position_arm = transform_to_arm_coordinates(filtered_position_camera, translation_vector)
-                    print(f"Filtered Ball Position (Arm Coordinates): {filtered_position_arm}")
+                    print(f"Filtered Position (Arm Coordinates): {filtered_position_arm}")
 
-                    # Predict the future position
-                    if len(positions) > 6:
-                        positions_np = np.array(positions)
-                        timestamps_np = np.array(timestamps) - timestamps[0]
-                        trajectory_params = fit_trajectory(timestamps_np, positions_np)
+                    # Predict future position
+                    # Calculate dynamic t_future
+                    distance_to_arm = np.linalg.norm(filtered_position_arm)  # Distance from ball to arm
+                    average_velocity = np.linalg.norm(kf.x[3:])  # Magnitude of velocity vector
+                    t_future = max(0.5, min(2.0, distance_to_arm / average_velocity))  # Adjust range as needed
 
-                        # Predict the future position
-                        t_future = 1.5  # Predict farther ahead for better reaction
-                        future_position_camera = trajectory_model(
-                            np.array([t_future]), *trajectory_params
-                        )[0]
-                        future_position_arm = transform_to_arm_coordinates(future_position_camera, translation_vector)
+                    # t_future = 2  # Time to predict into the future (seconds)
+                    future_position = filtered_position_camera + kf.x[3:] * t_future  # X + Vx*t, Y + Vy*t, Z + Vz*t
+                    future_position_arm = transform_to_arm_coordinates(future_position, translation_vector)
+                    print(f"Predicted Future Position (Arm Coordinates): {future_position_arm}")
 
-                        # Move the arm only if needed
-                        if should_update_position(last_position, future_position_arm, threshold=5.0):
-                            # Interpolate for smoother movement
-                            if last_position is not None:
-                                interpolated_positions = interpolate_position(last_position, future_position_arm, steps=5)
-                                for pos in interpolated_positions:
-                                    x, y, z = pos
-                                    arm.move_net_to_xy(x, y, True, True)
-                                    time.sleep(0.05)  # Small delay for smooth interpolation
-                            else:
-                                x, y, z = future_position_arm
-                                arm.move_net_to_xy(x, y, True, True)
-
-                            last_position = future_position_arm  # Update last position
+                    # Move the arm to the predicted position
+                    x, y, z = future_position_arm
+                    try:
+                        arm.move_net_to_xy(x, y, True, True)  # Adjust axes if necessary
+                        print(f"Arm moved to position: X={x:.2f}, Y={y:.2f}")
+                    except ValueError as e:
+                        print(f"Arm movement error: {e}")
 
             # Show debug frames
             cv2.imshow("Left Camera", left_frame)
@@ -190,13 +154,14 @@ def main():
         print("Error occurred:", e)
 
     finally:
-        # Clean up resources
+        # Release resources
         if cap.isOpened():
             cap.release()
         cv2.destroyAllWindows()
 
         arm.disconnect()
         print("Program exited and resources released.")
+
 
 if __name__ == "__main__":
     main()
