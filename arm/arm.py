@@ -11,7 +11,7 @@ class Arm:
         self.SERVO_PWM_MAX = 2500
         self.ANGLE_MIN = -90
         self.ANGLE_MAX = 90
-        self.DEFAULT_DURATION = 200  # Default duration for servo movements (ms)
+        self.DEFAULT_DURATION = 100  # Default duration for servo movements (ms)
 
         # Individual angle limits for each servo
         # Servo 6 (Base rotation): range is -90° (max left rotation) to 90° (max right rotation)
@@ -147,7 +147,18 @@ class Arm:
         dist_2d_net = math.sqrt(x_net**2 + y_net**2)
 
         if dist_2d_net < net_length:
-            raise ValueError("Target (x_net, y_net) is too close to the origin. The net cannot reach this position.")
+            if y_net < 0:
+                y_net = 0
+            
+            theta_base = math.degrees(math.atan2(x_net, y_net))
+            if execute:
+                self.set_angle(6, theta_base)
+
+            if debug:
+                print(f"\nNet target position: (x_net: {x_net:.1f}, y_net: {y_net:.1f})")
+                print(f"Inside inner boundary, just setting base angle: {theta_base:.1f}°")
+            
+            return
 
         # Scale back to the valid position for Servo 3
         scale = (dist_2d_net - net_length) / dist_2d_net
