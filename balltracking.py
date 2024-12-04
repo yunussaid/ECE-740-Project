@@ -178,9 +178,15 @@ def balltracking():
                     ball_left, ball_right, stereo_params, width, height
                 )
             # print("Ball Position in Camera Coordinates:", pos_3d_camera)
+            if pos_3d_camera != None:
+                pos_3d_arm = transform_to_arm_coordinates(pos_3d_camera, translation_vector)
+                # print("Ball Position in Arm Coordinates:", pos_3d_arm)
 
-            pos_3d_arm = transform_to_arm_coordinates(pos_3d_camera, translation_vector)
-            print("Ball Position in Arm Coordinates:", pos_3d_arm)
+                if pos_3d_arm != None:
+                    x, z, y = pos_3d_arm
+                    if x != None and y != None and z != None:
+                        print(f"Ball position: (x:{x:.2f},\ty: {y:.2f},\tz: {z:.2f})")
+
             # if pos_3d is not None:
             #     timestamps.append(time.time())
             #     positions.append(pos_3d)

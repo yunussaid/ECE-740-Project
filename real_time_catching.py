@@ -23,7 +23,7 @@ timestamps = []
 positions = []
 
 # Translation vector: camera to arm (in cm)
-translation_vector = (0, 45.5, 39.5)  # (T_x, T_y, T_z)
+translation_vector = (0, 455, 395)  # (T_x, T_y, T_z)
 
 
 def transform_to_arm_coordinates(camera_position, translation_vector):
@@ -84,7 +84,16 @@ def main():
                 pos_3d_camera = calculate_3d_position(
                     ball_left, ball_right, stereo_params, width, height
                 )
-                print("Ball Position in Camera Coordinates:", pos_3d_camera)
+                # print("Ball Position in Camera Coordinates:", pos_3d_camera)
+
+                if pos_3d_camera != None:
+                    pos_3d_arm = transform_to_arm_coordinates(pos_3d_camera, translation_vector)
+                    # print("Ball Position in Arm Coordinates:", pos_3d_arm)
+
+                    if pos_3d_arm != None:
+                        x, z, y = pos_3d_arm
+                        if x != None and y != None and z != None:
+                            print(f"Ball position: (x:{x:.2f},\ty: {y:.2f},\tz: {z:.2f})")
 
                 if pos_3d_camera is not None:
                     # Append current position and timestamp
@@ -106,10 +115,9 @@ def main():
                         # Move the robotic arm to the predicted position
                         # Transform to arm coordinates
                         future_position_arm = transform_to_arm_coordinates(future_position_camera, translation_vector)
-                        # print("Ball Position in Arm Coordinates:", pos_3d_arm_future)
                         x, y, z = future_position_arm
                         try:
-                            arm.move_to_xy(x, z)  # z, which is the depth of the camera, is actually y axis of the arm
+                            arm.move_net_to_xy(x, y, True, True)  # z, which is the depth of the camera, is actually y axis of the arm
                             print(f"Arm moved to position: X={x}, Y={y}")
                         except ValueError as e:
                             print(f"Arm movement error: {e}")
