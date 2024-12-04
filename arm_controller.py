@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from arm import Arm
+import math
 
 
 class ArmControlApp:
@@ -18,7 +19,7 @@ class ArmControlApp:
 
         # Sliders for X and Y
         self.x_slider = self.create_slider("X Axis", -193, 193, 0, 0, self.x_value)
-        self.y_slider = self.create_slider("Y Axis", -193, 193, 193, 1, self.y_value)
+        self.y_slider = self.create_slider("Y Axis", -193, 193, 0, 1, self.y_value)
 
         # Button to reset arm
         reset_button = ttk.Button(self.root, text="Reset", command=self.reset_position)
@@ -60,9 +61,19 @@ class ArmControlApp:
         x = self.x_slider.get()
         y = self.y_slider.get()
 
+        # Apply circular bounding
+        distance = (x**2 + y**2)**0.5
+        if distance > 193:
+            if x > y:
+                y = math.floor((193**2 - x**2)**0.5)
+            elif y >= x:
+                x = math.floor((193**2 - y**2)**0.5)
+            self.x_slider.set(x)
+            self.y_slider.set(y)
+
         # Move the arm to the specified (x, y) position
         try:
-            self.arm.move_to_xy(x, y)
+            self.arm.move_to_xy(x, y, True)
         except ValueError as e:
             print(f"Out of range: {e}")
 
