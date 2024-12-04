@@ -55,7 +55,7 @@ def calculate_3d_position(point_left, point_right, stereo_params, image_width, i
     # Adjust the origin to the center of the stereo camera
     cx, cy = principal_point
     X = ((point_left[0] - cx) * Z) / focal_length - (baseline / 2)
-    Y = ((point_left[1] - cy) * Z) / focal_length
+    Y = -((point_left[1] - cy) * Z) / focal_length
 
     return X, Y, Z
 
@@ -93,8 +93,8 @@ def orangeContour(frame):
             - mask: Binary mask highlighting the detected ball.
     """
     # Define the color range for the orange ping-pong ball in HSV
-    lower_orange = np.array([5, 150, 150])  # Lower bound for orange
-    upper_orange = np.array([15, 255, 255])  # Upper bound for orange
+    lower_orange = np.array([10, 150, 150])  # Lower bound for orange
+    upper_orange = np.array([25, 255, 255])  # Upper bound for orange
 
     # Convert the image from BGR to HSV
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -120,7 +120,32 @@ def orangeContour(frame):
     # Return None if no ball is detected
     return None, None, mask
 
-def main():
+# Translation vector: camera to arm (in cm)
+translation_vector = (0, 455, 395)  # (T_x, T_y, T_z)
+
+
+def transform_to_arm_coordinates(camera_position, translation_vector):
+    """
+    Transform the ball's 3D position from the camera's coordinate system to the robotic arm's coordinate system.
+
+    Args:
+        camera_position (tuple): (X_c, Y_c, Z_c) position of the ball in the camera's coordinates.
+        translation_vector (tuple): (T_x, T_y, T_z) translation from the camera to the arm.
+
+    Returns:
+        tuple: (X_a, Y_a, Z_a) position of the ball in the arm's coordinates.
+    """
+    X_c, Y_c, Z_c = camera_position
+    T_x, T_y, T_z = translation_vector
+
+    # Apply the translation matrix
+    X_a = X_c - T_x
+    Y_a = Y_c + T_y
+    Z_a = Z_c - T_z
+
+    return X_a, Y_a, Z_a
+
+def balltracking():
     """Main function to integrate ball detection, tracking, and prediction."""
     # Open the stereo camera (single index for the stereo stream)
     cap = cv2.VideoCapture(0)
@@ -149,8 +174,13 @@ def main():
 
         if ball_left and ball_right:
             # Calculate the ball's 3D position
-            pos_3d = calculate_3d_position(ball_left, ball_right, stereo_params, width, height)
-            print(pos_3d)
+            pos_3d_camera = calculate_3d_position(
+                    ball_left, ball_right, stereo_params, width, height
+                )
+            # print("Ball Position in Camera Coordinates:", pos_3d_camera)
+
+            pos_3d_arm = transform_to_arm_coordinates(pos_3d_camera, translation_vector)
+            print("Ball Position in Arm Coordinates:", pos_3d_arm)
             # if pos_3d is not None:
             #     timestamps.append(time.time())
             #     positions.append(pos_3d)
@@ -190,4 +220,4 @@ def main():
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main()
+    balltracking()
