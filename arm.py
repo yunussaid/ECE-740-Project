@@ -11,7 +11,7 @@ class Arm:
         self.SERVO_PWM_MAX = 2500
         self.ANGLE_MIN = -90
         self.ANGLE_MAX = 90
-        self.DEFAULT_DURATION = 750  # Default duration for servo movements (ms)
+        self.DEFAULT_DURATION = 200  # Default duration for servo movements (ms)
 
         # Individual angle limits for each servo
         # Servo 6 (Base rotation): range is -90° (max left rotation) to 90° (max right rotation)
@@ -105,12 +105,17 @@ class Arm:
         calculating the corresponding Z value automatically based on the sphere geometry.
         """
         if y < 0:
-            raise ValueError("Destination is out of reach. Ensure y >= 0")
-         
+            y = 0
+
         dist_3d = 193
         dist_2d = math.sqrt(x**2 + y**2)
-        if dist_2d > dist_3d:
-            raise ValueError("Destination is out of reach. Ensure x^2 + y^2 <= 193^2.")
+
+        # Constrain to an x-y plane semi-circle of radius 193
+        while dist_2d > dist_3d:
+            scale = dist_3d / dist_2d
+            x *= scale
+            y *= scale
+            dist_2d = math.sqrt(x**2 + y**2)
         
         z = math.sqrt(dist_3d**2 - dist_2d**2)
         if debug:
