@@ -1,8 +1,9 @@
 import cv2
 import math
 import os
+import time
 
-def test_resolution_fps_combinations(save_images=False):
+def test_resolution_fps_combinations(video_capture_api, save_images=False):
     # Resolutions options from manufacturer (width, height)
     resolutions = [
         (640, 240),     # Expected FPS: 120fps
@@ -22,8 +23,7 @@ def test_resolution_fps_combinations(save_images=False):
     for width, height in resolutions:
         
         # Open the camera
-        cap = cv2.VideoCapture(1)
-        # cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(1, video_capture_api)
 
         # Check if the camera opened successfully
         if not cap.isOpened():
@@ -82,7 +82,18 @@ def test_resolution_fps_combinations(save_images=False):
 
 
 def main():
-    test_resolution_fps_combinations(True)
+    video_capture_apis = [cv2.CAP_MSMF, cv2.CAP_DSHOW, cv2.CAP_FFMPEG]
+    api_name = ["CAP_MSMF", "CAP_DSHOW", "CAP_FFMPEG"]
+    
+    for api, name in zip(video_capture_apis, api_name):
+        print(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        start_time = time.time()
+        test_resolution_fps_combinations(api, True)
+        end_time = time.time()
+        print(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        
+        elapsed_time = end_time - start_time
+        print(f"Execution time w/ {name}: {elapsed_time:.6f} seconds\n")
 
 
 if __name__ == "__main__":
