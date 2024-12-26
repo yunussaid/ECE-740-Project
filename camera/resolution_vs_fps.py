@@ -3,7 +3,11 @@ import math
 import os
 import time
 
-def test_resolution_fps_combinations(video_capture_api, save_images=False):
+# Final results: It turns out that cv2.CAP_MSMF is slow during initialization but it has minimal lag during runtime.
+# On the other hand, cv2.CAP_DSHOW is very quick to initalize but it's laggy during runtime. cv2.CAP_FFMPEG wasn't
+# even able to access the camera at all.
+
+def test_resolution_fps_combinations(video_capture_api, api_name, save_images=False):
     # Resolutions options from manufacturer (width, height)
     resolutions = [
         (640, 240),     # Expected FPS: 120fps
@@ -19,9 +23,8 @@ def test_resolution_fps_combinations(video_capture_api, save_images=False):
     # Define the output directory for saved images
     output_dir = "resolution_vs_fps"
 
-    print("Testing Resolution, FPS, and Aspect Ratio combinations ...")
+    print(f"Testing Resolution, FPS, and Aspect Ratio combinations w/ {api_name}...")
     for width, height in resolutions:
-        
         # Open the camera
         cap = cv2.VideoCapture(1, video_capture_api)
 
@@ -53,7 +56,7 @@ def test_resolution_fps_combinations(video_capture_api, save_images=False):
             aspect_ratio = "Error: Undefined Aspect Ratio (Height is 0)"
 
         # Print the results
-        print()
+        # print()
         print(f"Requested: {width}x{height}p\tFPS: {max_fps:.0f}")
         print(f"Actual:    {actual_width}x{actual_height}p\tFPS: {actual_fps:.0f} \tAspect Ratio: {aspect_ratio}")
 
@@ -86,15 +89,11 @@ def main():
     api_name = ["CAP_MSMF", "CAP_DSHOW", "CAP_FFMPEG"]
     
     for api, name in zip(video_capture_apis, api_name):
-        print(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(f"\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         start_time = time.time()
-        test_resolution_fps_combinations(api, True)
-        end_time = time.time()
-        print(f"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        
-        elapsed_time = end_time - start_time
-        print(f"Execution time w/ {name}: {elapsed_time:.6f} seconds\n")
-
+        test_resolution_fps_combinations(api, name, True)
+        elapsed_time = time.time() - start_time
+        print(f"Execution time w/ {name}: {elapsed_time:.6f} seconds")
 
 if __name__ == "__main__":
     main()
