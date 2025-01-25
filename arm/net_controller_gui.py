@@ -14,8 +14,8 @@ class NetCanvasControlApp:
 
         # Canvas settings
         self.canvas_size = 500  # Size of the canvas (square)
-        self.outer_radius = 313  # Radius of the outer semi-circle (193 arm reach + 120 net length)
-        self.inner_radius = 120  # Radius of the inner semi-circle (net length)
+        self.outer_radius = 320  # Radius of the outer semi-circle (193 arm reach + 127 net length)
+        self.inner_radius = 127  # Radius of the inner semi-circle (net length)
         self.scale = self.canvas_size / (2 * self.outer_radius)  # Scale factor (pixels per mm)
         self.center = self.canvas_size // 2
 
@@ -40,13 +40,13 @@ class NetCanvasControlApp:
         # Create movable point
         self.point_radius = 5  # Radius of the draggable point
         self.point = self.canvas.create_oval(
-            self.center - self.point_radius, self.center - self.point_radius - int(self.outer_radius * self.scale),
-            self.center + self.point_radius, self.center + self.point_radius - int(self.outer_radius * self.scale),
+            self.center - self.point_radius, self.center - self.point_radius - int(self.inner_radius * self.scale),
+            self.center + self.point_radius, self.center + self.point_radius - int(self.inner_radius * self.scale),
             fill="red"
         )
 
         # Live coordinate display
-        self.coordinates_label = tk.Label(self.root, text="Net Coordinates: (x: 0.0 mm, y: 313.0 mm)")
+        self.coordinates_label = tk.Label(self.root, text="Net Coordinates: (x: 0.0 mm, y: 127.0 mm)")
         self.coordinates_label.grid(row=1, column=0, pady=10)
 
         # Bind dragging events
@@ -94,11 +94,11 @@ class NetCanvasControlApp:
         """Reset the point to the default position (center of the semi-circle)."""
         self.canvas.coords(
             self.point,
-            self.center - self.point_radius, self.center - self.point_radius - int(self.outer_radius * self.scale),
-            self.center + self.point_radius, self.center + self.point_radius - int(self.outer_radius * self.scale),
+            self.center - self.point_radius, self.center - self.point_radius - int(self.inner_radius * self.scale),
+            self.center + self.point_radius, self.center + self.point_radius - int(self.inner_radius * self.scale),
         )
-        self.coordinates_label.config(text="Net Coordinates: (x: 0.0 mm, y: 313.0 mm)")
-        self.arm.move_net_to_xy(0, self.outer_radius, execute=True, debug=True)
+        self.coordinates_label.config(text="Net Coordinates: (x: 0.0 mm, y: 127.0 mm)")
+        self.arm.move_net_to_xy(0, self.inner_radius, execute=True, debug=True)
 
     def on_close(self):
         """Handle window close event."""

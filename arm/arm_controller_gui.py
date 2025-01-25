@@ -31,8 +31,8 @@ class ArmCanvasControlApp:
         # Create movable point
         self.point_radius = 5  # Radius of the draggable point
         self.point = self.canvas.create_oval(
-            self.center - self.point_radius, self.center - self.point_radius - int(self.radius * self.scale),
-            self.center + self.point_radius, self.center + self.point_radius - int(self.radius * self.scale),
+            self.center - self.point_radius, self.center - self.point_radius,
+            self.center + self.point_radius, self.center + self.point_radius,
             fill="red"
         )
 
@@ -75,10 +75,10 @@ class ArmCanvasControlApp:
         """Reset the point to the default position (center of the semi-circle)."""
         self.canvas.coords(
             self.point,
-            self.center - self.point_radius, self.center - self.point_radius - int(self.radius * self.scale),
-            self.center + self.point_radius, self.center + self.point_radius - int(self.radius * self.scale),
+            self.center - self.point_radius, self.center - self.point_radius,
+            self.center + self.point_radius, self.center + self.point_radius,
         )
-        self.arm.move_to_xy(0, self.radius, execute=True)
+        self.arm.move_to_xy(0, 0, execute=True)
 
     def on_close(self):
         """Handle window close event."""
