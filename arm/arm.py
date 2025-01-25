@@ -141,7 +141,7 @@ class Arm:
         the target position accordingly before calling `move_to_xy`.
         """
         # Length of the net offset
-        net_length = 120  # mm
+        net_length = 127  # mm
 
         # Calculate the corresponding (x_servo3, y_servo3) for Servo 3
         dist_2d_net = math.sqrt(x_net**2 + y_net**2)
