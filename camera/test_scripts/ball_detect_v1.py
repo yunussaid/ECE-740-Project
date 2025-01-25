@@ -36,8 +36,11 @@ def filterOrange():
 
 
 def orangeContour():
-    # Open the camera
+    # Open the camera and set resolution & fps
     cap = cv2.VideoCapture(1)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1600)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
+    cap.set(cv2.CAP_PROP_FPS, 120)
 
     # Define the color range for the orange Ping-Pong ball in HSV
     # These values may need slight tweaking depending on your lighting conditions
