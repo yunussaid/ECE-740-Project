@@ -2,18 +2,16 @@ import cv2
 import numpy as np
 
 # Load calibration parameters
-calibration_data = np.load('calibration_params.npz')
+calibration_data = np.load('../calibration_params.npz')
 K1, D1 = calibration_data['K1'], calibration_data['D1']
 K2, D2 = calibration_data['K2'], calibration_data['D2']
 R, T = calibration_data['R'], calibration_data['T']
 baseline = calibration_data['baseline']
 
-# Define default HSV bounds
+# Define default HSV bounds and minimum radius for detection
 DEFAULT_LOWER_COLOR = np.array([0, 100, 165])
 DEFAULT_UPPER_COLOR = np.array([20, 255, 255])
-
-# Define minimum ball radius for detection
-MIN_DETECTABLE_RADIUS = 1
+DEFAULT_MIN_RADIUS = 1
 
 # Function to adjust HSV bounds dynamically
 def nothing(x):
@@ -26,10 +24,11 @@ if use_dynamic_hsv:
     cv2.namedWindow("Trackbars")
     cv2.createTrackbar("Lower H", "Trackbars", 0, 179, nothing)
     cv2.createTrackbar("Lower S", "Trackbars", 100, 255, nothing)
-    cv2.createTrackbar("Lower V", "Trackbars", 100, 255, nothing)
-    cv2.createTrackbar("Upper H", "Trackbars", 40, 179, nothing)
+    cv2.createTrackbar("Lower V", "Trackbars", 165, 255, nothing)
+    cv2.createTrackbar("Upper H", "Trackbars", 20, 179, nothing)
     cv2.createTrackbar("Upper S", "Trackbars", 255, 255, nothing)
     cv2.createTrackbar("Upper V", "Trackbars", 255, 255, nothing)
+    cv2.createTrackbar("Min Radius", "Trackbars", 1, 20, nothing)  # Scaled by 10x
 
 # Preprocessing function
 def preprocess(frame):
@@ -47,12 +46,14 @@ def detect_ball(frame):
         upper_h = cv2.getTrackbarPos("Upper H", "Trackbars")
         upper_s = cv2.getTrackbarPos("Upper S", "Trackbars")
         upper_v = cv2.getTrackbarPos("Upper V", "Trackbars")
+        min_radius = cv2.getTrackbarPos("Min Radius", "Trackbars") / 10.0  # Scale back to float
 
         lower_color = np.array([lower_h, lower_s, lower_v])
         upper_color = np.array([upper_h, upper_s, upper_v])
     else:
         lower_color = DEFAULT_LOWER_COLOR
         upper_color = DEFAULT_UPPER_COLOR
+        min_radius = DEFAULT_MIN_RADIUS
 
     # Apply color filter
     mask = cv2.inRange(frame, lower_color, upper_color)
@@ -70,7 +71,7 @@ def detect_ball(frame):
         ((x, y), radius) = cv2.minEnclosingCircle(largest_contour)
 
         # Ensure the detected object is large enough to be the ball
-        if radius >= MIN_DETECTABLE_RADIUS:
+        if radius >= min_radius:
             return (int(x), int(y), int(radius)), mask
 
     return None, mask
@@ -91,7 +92,7 @@ def triangulate_points(x_left, y_left, x_right, y_right, K1, K2, R, T):
     return points_3d.flatten()
 
 # Set up stereo camera feed (resolution & fps included)
-cap = cv2.VideoCapture(1) # can use cv2.CAP_DSHOW for faster testing
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW) # can use cv2.CAP_DSHOW strictly for faster testing
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1600)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
 cap.set(cv2.CAP_PROP_FPS, 120)
@@ -144,6 +145,7 @@ while True:
         cv2.circle(frame_left, (int(x_left), int(y_left)), int(radius_left), (0, 255, 0), 2)
         cv2.circle(frame_right, (int(x_right), int(y_right)), int(radius_right), (0, 255, 0), 2)
         cv2.putText(frame_left, f"3D: [{''.join(f'{int(coord):>6}' for coord in point_3d)}]", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+        cv2.putText(frame_right, f"3D: [{''.join(f'{int(coord):>6}' for coord in point_3d)}]", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
 
     # Display frames
