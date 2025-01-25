@@ -311,6 +311,7 @@ def caputre_image_pair(pair_name):
     cap = cv2.VideoCapture(1)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1600)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
+    cap.set(cv2.CAP_PROP_FPS, 120)
 
     if not cap.isOpened():
         print("Error: Could not open stereo camera.")
