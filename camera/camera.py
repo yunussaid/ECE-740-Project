@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 
@@ -8,7 +9,9 @@ class Camera:
         self.dynamic_mode = dynamic_mode
 
         # Load calibration parameters
-        calibration_data = np.load('calibration_params.npz')
+        curr_dir = os.path.dirname(os.path.abspath(__file__))
+        calibration_params = os.path.join(curr_dir, 'calibration_params.npz')
+        calibration_data = np.load(calibration_params)
         self.K1, self.D1 = calibration_data['K1'], calibration_data['D1']
         self.K2, self.D2 = calibration_data['K2'], calibration_data['D2']
         self.R, self.T = calibration_data['R'], calibration_data['T']
@@ -31,7 +34,7 @@ class Camera:
             cv2.createTrackbar("Min Radius", "Trackbars", 1, 20, lambda x: None) # Scaled by 10x
 
         # Initialize camera feed
-        self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW) # can use cv2.CAP_DSHOW strictly for faster testing
+        self.cap = cv2.VideoCapture(1) # can use cv2.CAP_DSHOW strictly for testing w/ faster boot-up
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1600)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 600)
         self.cap.set(cv2.CAP_PROP_FPS, 120)

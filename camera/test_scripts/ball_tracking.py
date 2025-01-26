@@ -1,8 +1,12 @@
+import os
 import cv2
 import numpy as np
 
 # Load calibration parameters
-calibration_data = np.load('../calibration_params.npz')
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(curr_dir)
+calibration_params = os.path.join(parent_dir, 'calibration_params.npz')
+calibration_data = np.load(calibration_params)
 K1, D1 = calibration_data['K1'], calibration_data['D1']
 K2, D2 = calibration_data['K2'], calibration_data['D2']
 R, T = calibration_data['R'], calibration_data['T']
