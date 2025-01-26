@@ -4,9 +4,10 @@ import math
 
 
 class NetCanvasControlApp:
-    def __init__(self, root, arm):
+    def __init__(self, root, arm, duration):
         self.root = root
         self.arm = arm
+        self.duration = duration
 
         # Set up GUI
         self.root.title("Net Canvas Control - Semi-Circle GUI")
@@ -86,7 +87,7 @@ class NetCanvasControlApp:
 
         # Update the arm's position
         try:
-            self.arm.move_net_to_xy(dx, dy, execute=True, debug=True)
+            self.arm.move_net_to_xy(dx, dy, self.duration, execute=True, debug=True)
         except ValueError as e:
             print(f"Out of range: {e}")
 
@@ -98,7 +99,7 @@ class NetCanvasControlApp:
             self.center + self.point_radius, self.center + self.point_radius - int(self.inner_radius * self.scale),
         )
         self.coordinates_label.config(text="Net Coordinates: (x: 0.0 mm, y: 127.0 mm)")
-        self.arm.move_net_to_xy(0, self.inner_radius, execute=True, debug=True)
+        self.arm.move_net_to_xy(0, self.inner_radius, self.duration, execute=True, debug=True)
 
     def on_close(self):
         """Handle window close event."""
@@ -111,9 +112,12 @@ def main():
     arm = Arm()
     arm.connect()
 
+    # Variable for controlling speed of the arm
+    duration = 100 # takes 100 ms (pretty fast) to execute movements
+
     # Create and run the app
     root = tk.Tk()
-    app = NetCanvasControlApp(root, arm)
+    app = NetCanvasControlApp(root, arm, duration)
 
     try:
         root.protocol("WM_DELETE_WINDOW", app.on_close)
