@@ -14,13 +14,17 @@ import os
 def test_1():
 
     # Load stereo parameters
-    calibration_params = np.load('calibration_params.npz')
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    calibration_params_path = os.path.join(curr_dir, 'calibration_params.npz')
+    calibration_params = np.load(calibration_params_path)
     K1, D1, K2, D2 = calibration_params['K1'], calibration_params['D1'], calibration_params['K2'], calibration_params['D2']
     R, T, F = calibration_params['R'], calibration_params['T'], calibration_params['F']
 
     # Load stereo images (adjust paths as needed)
-    left_image = cv2.imread('calibration_images/left_02.jpg', cv2.IMREAD_GRAYSCALE)
-    right_image = cv2.imread('calibration_images/right_02.jpg', cv2.IMREAD_GRAYSCALE)
+    left_image_path = os.path.join(curr_dir, 'calibration_images/left_02.jpg')
+    left_image = cv2.imread(left_image_path, cv2.IMREAD_GRAYSCALE)
+    right_image_path = os.path.join(curr_dir, 'calibration_images/right_02.jpg')
+    right_image = cv2.imread(right_image_path, cv2.IMREAD_GRAYSCALE)
 
     # Rectification
     image_size = left_image.shape[::-1]
@@ -99,13 +103,17 @@ def test_1():
 def test_2():
 
     # Load stereo parameters
-    calibration_params = np.load('calibration_params.npz')
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    calibration_params_path = os.path.join(curr_dir, 'calibration_params.npz')
+    calibration_params = np.load(calibration_params_path)
     K1, D1, K2, D2 = calibration_params['K1'], calibration_params['D1'], calibration_params['K2'], calibration_params['D2']
     R, T, F = calibration_params['R'], calibration_params['T'], calibration_params['F']
 
     # Load stereo images (adjust paths as needed)
-    left_image = cv2.imread('calibration_images/left_02.jpg', cv2.IMREAD_GRAYSCALE)
-    right_image = cv2.imread('calibration_images/right_02.jpg', cv2.IMREAD_GRAYSCALE)
+    left_image_path = os.path.join(curr_dir, 'calibration_images/left_02.jpg')
+    left_image = cv2.imread(left_image_path, cv2.IMREAD_GRAYSCALE)
+    right_image_path = os.path.join(curr_dir, 'calibration_images/right_02.jpg')
+    right_image = cv2.imread(right_image_path, cv2.IMREAD_GRAYSCALE)
 
     # Rectification
     image_size = left_image.shape[::-1]
@@ -160,7 +168,9 @@ def test_2():
 def test_3():
 
     # Load calibration parameters
-    calibration_params = np.load('calibration_params.npz')
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    calibration_params_path = os.path.join(curr_dir, 'calibration_params.npz')
+    calibration_params = np.load(calibration_params_path)
 
     K1 = calibration_params['K1']
     D1 = calibration_params['D1']
@@ -170,8 +180,8 @@ def test_3():
     T = calibration_params['T']
 
     # Load left and right images
-    left_img_path = 'calibration_images/left_02.jpg'
-    right_img_path = 'calibration_images/right_02.jpg'
+    left_img_path = os.path.join(curr_dir, 'calibration_images/left_02.jpg')
+    right_img_path = os.path.join(curr_dir, 'calibration_images/right_02.jpg')
 
     img_left = cv2.imread(left_img_path)
     img_right = cv2.imread(right_img_path)
@@ -230,13 +240,17 @@ def test_3():
 def test_4():
 
     # Load the stereo calibration parameters
-    params = np.load('calibration_params.npz')
-    K1, D1, K2, D2 = params['K1'], params['D1'], params['K2'], params['D2']
-    R, T = params['R'], params['T']
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    calibration_params_path = os.path.join(curr_dir, 'calibration_params.npz')
+    calibration_params = np.load(calibration_params_path)
+    K1, D1, K2, D2 = calibration_params['K1'], calibration_params['D1'], calibration_params['K2'], calibration_params['D2']
+    R, T = calibration_params['R'], calibration_params['T']
 
     # Load a pair of stereo images
-    left_image = cv2.imread('calibration_validation/left_depth_testing.jpg')
-    right_image = cv2.imread('calibration_validation/right_depth_testing.jpg')
+    left_image_path = os.path.join(curr_dir, 'calibration_validation/left_depth_testing.jpg')
+    left_image = cv2.imread(left_image_path, cv2.IMREAD_GRAYSCALE)
+    right_image_path = os.path.join(curr_dir, 'calibration_validation/right_depth_testing.jpg')
+    right_image = cv2.imread(right_image_path, cv2.IMREAD_GRAYSCALE)
 
     # Get image dimensions
     image_size = left_image.shape[::-1][1:]
@@ -303,7 +317,8 @@ def test_4():
 def caputre_image_pair(pair_name):
 
     # Set up save directory if it doesn't exist
-    save_dir = 'calibration_validation'
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    save_dir = os.path.join(curr_dir, 'calibration_validation')
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 

@@ -11,7 +11,7 @@ class Arm:
         self.SERVO_PWM_MAX = 2500
         self.ANGLE_MIN = -90
         self.ANGLE_MAX = 90
-        self.DEFAULT_DURATION = 100  # Default duration for servo movements (ms)
+        self.DEFAULT_DURATION = 1000  # Default duration for servo movements (ms)
 
         # Individual angle limits for each servo
         # Servo 6 (Base rotation): range is -90° (max left rotation) to 90° (max right rotation)
@@ -80,8 +80,6 @@ class Arm:
 
     def set_all_angles(self, angles, duration=None):
         """Set angles for multiple servos at once, respecting individual limits."""
-        if duration is None:
-            duration = self.DEFAULT_DURATION
         if len(angles) != 4:
             raise ValueError("Expected 4 angles for servos 3, 4, 5, and 6.")
         
@@ -99,7 +97,7 @@ class Arm:
         print(f"\nSleeping for {seconds} seconds...")
         time.sleep(seconds)
 
-    def move_to_xy(self, x, y, execute = False, debug=False):
+    def move_to_xy(self, x, y, duration=None, execute=False, debug=False):
         """
         Move the arm to a specified (x, y) coordinate in the X-Y plane,
         calculating the corresponding Z value automatically based on the sphere geometry.
@@ -129,12 +127,12 @@ class Arm:
             print(f"Servo angles: Base: {theta_base:.1f}°, Shoulder: {theta_shoulder:.1f}°, Net: {theta_net:.1f}°")
 
         if execute:
-            self.set_angle(6, theta_base)      # Base
-            self.set_angle(5, theta_shoulder)  # Shoulder
-            self.set_angle(4, 0)               # Fix Elbow at 0°
-            self.set_angle(3, theta_net)       # Net tilt
+            self.set_angle(6, theta_base, duration)      # Base
+            self.set_angle(5, theta_shoulder, duration)  # Shoulder
+            self.set_angle(4, 0, duration)               # Fix Elbow at 0°
+            self.set_angle(3, theta_net, duration)       # Net tilt
 
-    def move_net_to_xy(self, x_net, y_net, execute=False, debug=False):
+    def move_net_to_xy(self, x_net, y_net, duration=None, execute=False, debug=False):
         """
         Move the center of the net to the specified (x_net, y_net) coordinate.
         The method accounts for the net's offset from Servo 3 and translates
@@ -170,7 +168,7 @@ class Arm:
             print(f"Translated Servo 3 position: (x_servo3: {x_servo3:.1f}, y_servo3: {y_servo3:.1f})")
 
         # Call move_to_xy with the translated coordinates
-        self.move_to_xy(x_servo3, y_servo3, execute, debug)
+        self.move_to_xy(x_servo3, y_servo3, duration, execute, debug)
 
 
 def main():
@@ -179,21 +177,24 @@ def main():
     try:
         arm.connect()
 
-        arm.move_to_xy(-193, 0, True, True)
+        # Variable for controlling speed of the arm
+        duration = None # takes duration amount ms to execute movement 
+
+        arm.move_to_xy(-193, 0, duration, True, True)
         arm.rest(10)
-        arm.move_to_xy(0, 193, True, True)
+        arm.move_to_xy(0, 193, duration, True, True)
         arm.rest(10)
-        arm.move_to_xy(193, 0, True, True)
+        arm.move_to_xy(193, 0, duration, True, True)
         arm.rest(10)
 
-        arm.move_to_xy(68, 68, True, True)
+        arm.move_to_xy(68, 68, duration, True, True)
         arm.rest(10)
-        arm.move_to_xy(-68, 68, True, True)
+        arm.move_to_xy(-68, 68, duration, True, True)
         arm.rest(10)
 
-        arm.move_to_xy(136.4, 136.4, True, True)
+        arm.move_to_xy(136.4, 136.4, duration, True, True)
         arm.rest(10)
-        arm.move_to_xy(-136.4, 136.4, True, True)
+        arm.move_to_xy(-136.4, 136.4, duration, True, True)
         arm.rest(10)
         
         arm.reset_all_angles()
